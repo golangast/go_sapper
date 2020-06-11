@@ -3,6 +3,7 @@
   "description": "TODO",
   "version": "0.0.1",
   "scripts": {
+    "prebuild": "del-cli --force ./public",
     "dev": "sapper dev",
     "build": "sapper export && mv ./__sapper__/export ./public",
     "export": "sapper export --legacy",

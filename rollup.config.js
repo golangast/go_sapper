@@ -6,14 +6,16 @@ import babel from '@rollup/plugin-babel';
 import { terser } from 'rollup-plugin-terser';
 import config from 'sapper/config/rollup.js';
 import pkg from './package.json';
+//import livereload from 'rollup-plugin-livereload';
 
 const mode = process.env.NODE_ENV;
 const dev = mode === 'development';
 const legacy = !!process.env.SAPPER_LEGACY_BUILD;
-
+const production = !process.env.ROLLUP_WATCH;
 const onwarn = (warning, onwarn) => (warning.code === 'CIRCULAR_DEPENDENCY' && /[/\\]@sapper[/\\]/.test(warning.message)) || onwarn(warning);
 
 export default {
+	
 	client: {
 		input: config.client.input(),
 		output: config.client.output(),
@@ -23,7 +25,7 @@ export default {
 				'process.env.NODE_ENV': JSON.stringify(mode)
 			}),
 			svelte({
-				dev,
+				dev: !production,
 				hydratable: true,
 				emitCss: true
 			}),
@@ -32,7 +34,7 @@ export default {
 				dedupe: ['svelte']
 			}),
 			commonjs(),
-
+			
 			legacy && babel({
 				extensions: ['.js', '.mjs', '.html', '.svelte'],
 				babelHelpers: 'runtime',
@@ -75,6 +77,8 @@ export default {
 				dedupe: ['svelte']
 			}),
 			commonjs()
+
+			
 		],
 		external: Object.keys(pkg.dependencies).concat(
 			require('module').builtinModules || Object.keys(process.binding('natives'))

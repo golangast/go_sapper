@@ -75,7 +75,7 @@
 
     <a
       class="grid-item"
-      href="getrevue.co/profile/golang/issues/master-the-world-of-golang-issue-9-120281"
+      href="https://medium.com/jexia/master-the-world-of-golang-issue-9-2bdfec563c2e"
       target="_blank">
       Tutorials
     </a>
@@ -96,6 +96,7 @@
     </a>
 
     <a class="grid-item" href="https://svelte.dev/" target="_blank">SVELTEJS</a>
+    <a class="grid-item" href="https://sapper.svelte.dev/docs/" target="_blank">Sapper</a>
 
     <a class="grid-item" href="https://golang.org/" target="_blank">Go</a>
   </div>

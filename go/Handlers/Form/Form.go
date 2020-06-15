@@ -25,9 +25,9 @@ func (r *Login) Marshal() ([]byte, error) {
 }
 
 type Login struct {
-	Name     string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Name  string `json:"username"`
+	Email string `json:"email"`
+	Pass  string `json:"pass"`
 }
 
 func POST(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +38,7 @@ func POST(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.Header.Get("Origin"))
 	allowedHeaders := "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization,X-CSRF-Token"
 	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081/post")
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5000")
+	w.Header().Set("Access-Control-Allow-Origin", "http://b6f2509b93bd.ngrok.io")
 
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers", allowedHeaders)
@@ -91,13 +91,13 @@ func POST(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("ping ")
 		}
 		// query
-		stmt, err := db.Prepare("INSERT INTO users(name, email, password) VALUES(?, ?, ?)")
+		stmt, err := db.Prepare("INSERT INTO users(name, email, pass) VALUES(?, ?, ?)")
 		if err != nil {
 			log.Fatal(err)
 		}
-		userstemp := Login{Name: l.Name, Email: l.Name, Password: l.Name}
+		userstemp := Login{Name: l.Name, Email: l.Email, Pass: l.Pass}
 		fmt.Println(userstemp)
-		res, err := stmt.Exec(userstemp.Name, userstemp.Email, userstemp.Password)
+		res, err := stmt.Exec(userstemp.Name, userstemp.Email, userstemp.Pass)
 		if err != nil {
 			log.Fatal(err)
 		}

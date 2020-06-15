@@ -14,7 +14,7 @@ import (
 	. "github.com/logrusorgru/aurora"
 	"github.com/rs/cors"
 
-	
+	DB "github.com/golangast/go_sapper/go/Handlers/Form"
 )
 
 type intercept404 struct {
@@ -62,6 +62,7 @@ func spaFileServeFunc(dir string) func(http.ResponseWriter, *http.Request) {
 func main() {
 	mux := http.NewServeMux() //used for cors
 	mux.HandleFunc("/", spaFileServeFunc("public"))
+	mux.HandleFunc("/post", DB.POST)
 	handler := cors.Default().Handler(mux)
 	c := context.Background()
 	log.Fatal(http.ListenAndServe(":8081", AddContext(c, handler)))

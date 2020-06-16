@@ -25,7 +25,7 @@ func (r *Login) Marshal() ([]byte, error) {
 }
 
 type Login struct {
-	Name  string `json:"username"`
+	Name  string `json:"name"`
 	Email string `json:"email"`
 	Pass  string `json:"pass"`
 }

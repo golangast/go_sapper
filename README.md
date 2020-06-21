@@ -34,3 +34,10 @@ this is to actually run the program/ still need to work in the go build and exec
 - npm start
 
 
+#setting up my environment
+
+https://docs.google.com/document/d/1ohWcUDKncIHfPK-E_Db72dt5PQtUZaa9UgSPaNdyoPU/edit
+
+#how i setup the post
+
+https://docs.google.com/document/d/1W-3u7ZTwr3r0ZuUlVUCOAidvWMAzJumH1YkvwcAK7Yk/edit

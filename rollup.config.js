@@ -6,6 +6,7 @@ import babel from '@rollup/plugin-babel';
 import { terser } from 'rollup-plugin-terser';
 import config from 'sapper/config/rollup.js';
 import pkg from './package.json';
+
 //import livereload from 'rollup-plugin-livereload';
 
 const mode = process.env.NODE_ENV;
@@ -34,6 +35,7 @@ export default {
 				dedupe: ['svelte']
 			}),
 			commonjs(),
+			
 			
 			legacy && babel({
 				extensions: ['.js', '.mjs', '.html', '.svelte'],

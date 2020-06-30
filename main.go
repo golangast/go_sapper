@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"crypto/subtle"
 	"fmt"
 	"io"
 	"log"
@@ -18,6 +20,7 @@ import (
 	DB "github.com/golangast/go_sapper/go/Handlers/Form"
 )
 
+//spa handler code
 type intercept404 struct {
 	http.ResponseWriter
 	statusCode int
@@ -42,7 +45,6 @@ func (w *intercept404) WriteHeader(statusCode int) {
 }
 
 func spaFileServeFunc(dir string) func(http.ResponseWriter, *http.Request) {
-
 	fileServer := http.FileServer(http.Dir(dir))
 	return func(w http.ResponseWriter, r *http.Request) {
 		wt := &intercept404{ResponseWriter: w}
@@ -60,17 +62,48 @@ func spaFileServeFunc(dir string) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+//end of spa handler code
 func main() {
+	userhash := hasher("admin")
+	passhash := hasher("$CrazyUnforgettablePassword?")
+	realm := "Please enter username and password"
 	mux := http.NewServeMux() //used for cors
-	mux.HandleFunc("/", spaFileServeFunc("public"))
+
+	//uses the autho handler and wraps the public one
+	mux.HandleFunc("/", authHandler(spaFileServeFunc("public"), userhash, passhash, realm))
+
 	mux.HandleFunc("/post", DB.POST)
 	mux.HandleFunc("/api", API.GET)
 	handler := cors.Default().Handler(mux)
 	c := context.Background()
-	log.Fatal(http.ListenAndServe(":8081", AddContext(c, handler)))
+	log.Fatal(http.ListenAndServe(":8080", AddContext(c, handler)))
 
 }
 
+//begin of autho code
+// hasher uses package "crypto/sha256"
+func hasher(s string) []byte {
+	val := sha256.Sum256([]byte(s))
+	return val[:]
+}
+
+func authHandler(handler http.HandlerFunc, userhash, passhash []byte, realm string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, pass, ok := r.BasicAuth()
+		fmt.Println("this is user and pass ", user, pass)
+		if !ok || subtle.ConstantTimeCompare(hasher(user),
+		fmt.Println("user and pass are okay")
+			userhash) != 1 || subtle.ConstantTimeCompare(hasher(pass), passhash) != 1 {
+			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
+			http.Error(w, "Unauthorized.", http.StatusUnauthorized)
+			return
+		}
+
+		handler(w, r)
+	}
+}
+
+//end of autho code
 var err error
 
 //used for printing time of request

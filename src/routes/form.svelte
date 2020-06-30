@@ -5,7 +5,7 @@
   let result = null;
 
   async function doPost() {
-    const res = await fetch("http://localhost:8081/post", {
+    const res = await fetch("http://localhost:8080/post", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

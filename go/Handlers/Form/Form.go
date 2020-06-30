@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -28,6 +29,39 @@ type Login struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	Pass  string `json:"pass"`
+}
+
+func (p Login) Sanitize() {
+	p.Name = html.EscapeString(p.Name)
+	p.Email = html.EscapeString(p.Email)
+	p.Pass = html.EscapeString(p.Pass)
+
+}
+
+type Data struct {
+	L Login
+	S Sanitizer
+}
+type Sanitizer interface {
+	Sanitize()
+}
+
+func Save(l Data) (Data, error) {
+	var err error
+
+	// type assertion for Sanitizer (could also use a type switch)
+	s, ok := l.S.(Sanitizer)
+
+	if !ok {
+		if err != nil {
+			log.Fatal(err)
+		}
+		// ... save without sanitization
+		return l, err
+	}
+
+	s.Sanitize()
+	return l, err
 }
 
 func POST(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +110,7 @@ func POST(w http.ResponseWriter, r *http.Request) {
 
 		//database beginsssssss
 
-		db, err := sql.Open("mysql", "root:@/user")
+		db, err := sql.Open("mysql", "admin:@/user")
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -95,9 +129,17 @@ func POST(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		userstemp := Login{Name: l.Name, Email: l.Email, Pass: l.Pass}
+
+		userstemp := Data{L: Login{Name: l.Name, Email: l.Email, Pass: l.Pass}}
 		fmt.Println(userstemp)
-		res, err := stmt.Exec(userstemp.Name, userstemp.Email, userstemp.Pass)
+
+		u := userstemp
+		s, err := Save(u)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		res, err := stmt.Exec(s.L.Name, s.L.Email, s.L.Pass)
 		if err != nil {
 			log.Fatal(err)
 		}

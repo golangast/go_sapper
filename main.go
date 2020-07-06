@@ -84,7 +84,7 @@ func main() {
 
 	//uses the autho handler and wraps the public one
 	//https://subscription.packtpub.com/book/web_development/9781787286740/1/ch01lvl1sec13/implementing-basic-authentication-on-a-simple-http-server
-	http.HandleFunc("/show", BasicAuth(helloWorld, "Please enter your username and password"))
+	http.HandleFunc("/new", BasicAuth(d, "Please enter your username and password"))
 	mux.HandleFunc("/post", DB.POST)
 	mux.HandleFunc("/api", API.GET)
 	//uses the autho handler and wraps the public one
@@ -95,99 +95,98 @@ func main() {
 	//log.Fatal(http.ListenAndServe(CONN_HOST+":"+CONN_PORT, nil))
 }
 
-func helloWorld(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello World!")
-}
 func BasicAuth(handler http.HandlerFunc, realm string) http.HandlerFunc {
+
 	fmt.Println("autho begin")
+	//checking
+
+	// This is a dummy check for credentials.
+	//go get html file
+	fmt.Println("db begin")
+	db, err := sql.Open("mysql", "root:@/user")
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("open ")
+	}
+
+	defer db.Close()
+	err = db.Ping()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("ping ")
+	}
+	//opening database
+
+	var (
+		id       int
+		email    string
+		username string
+		password string
+	)
+	i := 0
+
+	//	rows, err := db.Query("select * from users where id = ?", 1)
+	rows, err := db.Query("select * from users")
+	for rows.Next() {
+		err := rows.Scan(&id, &username, &email, &password)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+
+			i++
+			fmt.Println("scan ", i)
+		}
+		//	fmt.Println("database ", username, password)
+		login = append(login, Login{Username: username, Email: email, Password: password})
+		//	fmt.Println("before marshal ", login)
+
+	}
+
+	defer rows.Close()
+	//	spew.Dump(login)
+
 	return func(w http.ResponseWriter, r *http.Request) {
-		//checking
-
-		// This is a dummy check for credentials.
-		//go get html file
-		fmt.Println("db begin")
-		db, err := sql.Open("mysql", "root:@/user")
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println("open ")
-		}
-
-		defer db.Close()
-		err = db.Ping()
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println("ping ")
-		}
-		//opening database
-
-		var (
-			id       int
-			email    string
-			username string
-			password string
-		)
-		i := 0
-		// Read cookie
-		cookie, err := r.Cookie("mine")
-		if err != nil {
-			fmt.Printf("Cant find cookie :/\r\n")
-			return
-		}
-
-		fmt.Printf("%s=%s\r\n", cookie.Name, cookie.Value)
-
-		//	rows, err := db.Query("select * from users where id = ?", 1)
-		rows, err := db.Query("select * from users")
-		for rows.Next() {
-			err := rows.Scan(&id, &username, &email, &password)
-			if err != nil {
-				fmt.Println(err)
-			} else {
-
-				i++
-				fmt.Println("scan ", i)
-			}
-			//	fmt.Println("database ", username, password)
-			login = append(login, Login{Username: username, Email: email, Password: password})
-			//	fmt.Println("before marshal ", login)
-
-		}
-
-		// user, pass, ok := r.BasicAuth()
-		// //if not autho
-		// if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(ADMIN_USER)) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(ADMIN_PASSWORD)) != 1 {
-		// 	w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
-		// 	w.WriteHeader(401)
-		// 	w.Write([]byte("You are Unauthorized to access the application.\n"))
-		// 	return
-		// }
-		// var users = user
-		// for _, value := range login {
-
-		// 	fmt.Println(login)
-		// 	if user == string(login. {
-
-		// 	} else {
-		// 		unauthorised(w)
-		// 		return
-		// 	}
-		// }
-
-		defer rows.Close()
-		//	spew.Dump(login)
+		fmt.Println("start comparing")
 		for key, value := range login {
 			fmt.Println(key, value.Email)
-
+			cookie, err := r.Cookie("mine")
+			if err != nil {
+				fmt.Printf("Cant find cookie :/\r\n")
+				return
+			}
 			if value.Email == cookie.Name {
 				fmt.Println("yes found")
 			}
 
+			fmt.Printf("%s=%s\r\n", cookie.Name, cookie.Value)
+			fmt.Println("done comparing")
+			// user, pass, ok := r.BasicAuth()
+			// //if not autho
+			// if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(ADMIN_USER)) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(ADMIN_PASSWORD)) != 1 {
+			// 	w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
+			// 	w.WriteHeader(401)
+			// 	w.Write([]byte("You are Unauthorized to access the application.\n"))
+			// 	return
+			// }
+			// var users = user
+			// for _, value := range login {
+
+			// 	fmt.Println(login)
+			// 	if user == string(login. {
+
+			// 	} else {
+			// 		unauthorised(w)
+			// 		return
+			// 	}
+			// }
+
+			handler(w, r)
 		}
-		handler(w, r)
 	}
 }
+
 func unauthorised(rw http.ResponseWriter) {
 	rw.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
 	rw.WriteHeader(http.StatusUnauthorized)
@@ -203,6 +202,7 @@ var Durations = time.Now().Sub(Start)
 type Contexter struct {
 	M      string
 	S      int
+	Co     string
 	U      *url.URL
 	P      string
 	B      io.ReadCloser
@@ -225,6 +225,11 @@ func AddContext(ctx context.Context, next http.Handler) http.Handler {
 
 		Start := time.Now()
 		Duration := time.Now().Sub(Start)
+		cookie, _ := r.Cookie("mine")
+
+		for _, cookies := range r.Cookies() {
+			fmt.Fprint(w, Cyan(cookies.Name))
+		}
 
 		CC = Contexter{
 			M:      r.WithContext(ctx).Method,
@@ -260,11 +265,10 @@ func AddContext(ctx context.Context, next http.Handler) http.Handler {
 		// for k, v := range CC.H {
 		// 	fmt.Println("\n", k, v)
 		// }
-		cookie, _ := r.Cookie("username")
 
 		if cookie != nil {
 			//Add data to context
-			ctx := context.WithValue(r.Context(), "Username", cookie.Value)
+			ctx := context.WithValue(r.Context(), "mine", cookie.Value)
 			next.ServeHTTP(w, r.WithContext(ctx))
 
 		} else {
@@ -278,4 +282,7 @@ func AddContext(ctx context.Context, next http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 	})
+}
+func d(res http.ResponseWriter, req *http.Request) {
+	io.WriteString(res, "dog dog dog")
 }

@@ -124,6 +124,7 @@ func POST(w http.ResponseWriter, r *http.Request) {
 		} else {
 			fmt.Println("ping ")
 		}
+
 		// query
 		stmt, err := db.Prepare("INSERT INTO users(name, email, pass) VALUES(?, ?, ?)")
 		if err != nil {
@@ -132,6 +133,13 @@ func POST(w http.ResponseWriter, r *http.Request) {
 
 		userstemp := Data{L: Login{Name: l.Name, Email: l.Email, Pass: l.Pass}}
 		fmt.Println(userstemp)
+		//cookies
+		c := http.Cookie{
+			Name:   "mine",
+			Value:  userstemp.L.Name,
+			Domain: "http://localhost:8080/",
+		}
+		http.SetCookie(w, &c)
 
 		u := userstemp
 		s, err := Save(u)

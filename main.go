@@ -13,22 +13,22 @@ import (
 	"time"
 
 	//only 3rd parties
-
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	. "github.com/logrusorgru/aurora"
 	"github.com/rs/cors"
 	"gitlab.com/zendrulat123/gow/Handlers/Clients"
 
+	//imported files
 	API "github.com/golangast/go_sapper/go/Handlers/API"
 	DB "github.com/golangast/go_sapper/go/Handlers/Form"
+	DBAll "github.com/golangast/go_sapper/go/DB"
+	
 )
 
 const (
-	CONN_HOST      = "localhost"
-	CONN_PORT      = "8080"
-	ADMIN_USER     = "admin"
-	ADMIN_PASSWORD = "admin"
+	CONN_HOST = "localhost"
+	CONN_PORT = "8080"
 )
 
 type Login struct {
@@ -70,11 +70,12 @@ func init() {
 	tpl = template.Must(template.ParseGlob("templates/*.html"))
 
 }
-func final(w http.ResponseWriter, r *http.Request) {
-	log.Println("Executing finalHandler")
-	w.Header().Set("Content-Type", "text/html")
-	tpl.ExecuteTemplate(w, "next.html", nil)
-}
+
+// func final(w http.ResponseWriter, r *http.Request) {
+// 	log.Println("Executing finalHandler")
+// 	w.Header().Set("Content-Type", "text/html")
+// 	tpl.ExecuteTemplate(w, "next.html", nil)
+// }
 func main() {
 
 	mux := http.NewServeMux() //used for cors
@@ -86,8 +87,8 @@ func main() {
 	mux.HandleFunc("/login", logins)
 	mux.HandleFunc("/home", index)
 
-	finalHandler := http.HandlerFunc(final)
-	mux.Handle("/next", exampleMiddleware(finalHandler))
+	// finalHandler := http.HandlerFunc(final)
+	// mux.Handle("/next", exampleMiddleware(finalHandler))
 	mux.HandleFunc("/forbidden", forbidden)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
 	mux.HandleFunc("/secret", secret)
@@ -103,6 +104,15 @@ func main() {
 func SpaFileServeFunc(dir string) func(http.ResponseWriter, *http.Request) {
 	fileServer := http.FileServer(http.Dir(dir))
 	return func(w http.ResponseWriter, r *http.Request) {
+		session, _ := store.Get(r, "cookie-name")
+		fmt.Println(session)
+		user := getUser(session)
+		fmt.Println(user)
+		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+			fmt.Println("unautho")
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
 
 		wt := &intercept404{ResponseWriter: w}
 		fileServer.ServeHTTP(wt, r)
@@ -346,7 +356,7 @@ func getDBUser(Username string, pass string) *User {
 	fmt.Println("return request")
 
 	//begininig authoa
-	login := GetAllDB()
+	login := DBAll()
 	//begin scanning
 	for key, value := range login {
 		fmt.Println(key, " username is: ", value.Username, "password is: ", value.Password)
@@ -424,47 +434,4 @@ func logins(w http.ResponseWriter, r *http.Request) {
 
 	return
 
-}
-
-func GetAllDB() []Login {
-	fmt.Println("db begin")
-	db, err := sql.Open("mysql", "root:@/user")
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("open ")
-	}
-
-	defer db.Close()
-	err = db.Ping()
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("ping ")
-	}
-	//opening database
-
-	var (
-		id       int
-		email    string
-		username string
-		password string
-	)
-	i := 0
-
-	//	rows, err := db.Query("select * from users where id = ?", 1)
-	rows, err := db.Query("select * from users")
-	for rows.Next() {
-		err := rows.Scan(&id, &username, &email, &password)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			i++
-			fmt.Println("scan ", i)
-		}
-		login = append(login, Login{Username: username, Email: email, Password: password})
-
-	}
-	defer rows.Close()
-	return login
 }

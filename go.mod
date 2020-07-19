@@ -3,8 +3,6 @@ module github.com/golangast/go_sapper
 go 1.14
 
 require (
-	github.com/acim/erinus v0.0.0-20200503170538-cdd8d864ec22 // indirect
-	github.com/davecgh/go-spew v1.1.1
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.0

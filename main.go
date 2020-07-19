@@ -3,15 +3,19 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/gob"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"text/template"
 	"time"
 
 	//only 3rd parties
 
+	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
 	. "github.com/logrusorgru/aurora"
 	"github.com/rs/cors"
 	"gitlab.com/zendrulat123/gow/Handlers/Clients"
@@ -33,35 +37,73 @@ type Login struct {
 	Password string `json:"pass"`
 }
 
+// User holds a users account information https://curtisvermeeren.github.io/2018/05/13/Golang-Gorilla-Sessions
+type User struct {
+	Username      string
+	Authenticated bool
+}
+
+// store will hold all session data
+var store *sessions.CookieStore
+
+// tpl holds all parsed templates
+var tpl *template.Template
+
 var login []Login
 
-//spa handler code
-type intercept404 struct {
-	http.ResponseWriter
-	statusCode int
+func init() {
+	authKeyOne := securecookie.GenerateRandomKey(64)
+	encryptionKeyOne := securecookie.GenerateRandomKey(32)
+
+	store = sessions.NewCookieStore(
+		authKeyOne,
+		encryptionKeyOne,
+	)
+
+	store.Options = &sessions.Options{
+		MaxAge:   60 * 15,
+		HttpOnly: true,
+	}
+
+	gob.Register(User{})
+
+	tpl = template.Must(template.ParseGlob("templates/*.html"))
+
+}
+func final(w http.ResponseWriter, r *http.Request) {
+	log.Println("Executing finalHandler")
+	w.Header().Set("Content-Type", "text/html")
+	tpl.ExecuteTemplate(w, "next.html", nil)
+}
+func main() {
+
+	mux := http.NewServeMux() //used for cors
+
+	//uses the autho handler and wraps the public one
+	//https://subscription.packtpub.com/book/web_development/9781787286740/1/ch01lvl1sec13/implementing-basic-authentication-on-a-simple-http-server
+	mux.HandleFunc("/post", DB.POST)
+	mux.HandleFunc("/api", API.GET)
+	mux.HandleFunc("/login", logins)
+	mux.HandleFunc("/home", index)
+
+	finalHandler := http.HandlerFunc(final)
+	mux.Handle("/next", exampleMiddleware(finalHandler))
+	mux.HandleFunc("/forbidden", forbidden)
+	http.Handle("/favicon.ico", http.NotFoundHandler())
+	mux.HandleFunc("/secret", secret)
+	//uses the autho handler and wraps the public one
+	mux.HandleFunc("/", SpaFileServeFunc("public"))
+
+	handler := cors.Default().Handler(mux)
+	c := context.Background()
+	log.Fatal(http.ListenAndServe(CONN_HOST+":"+CONN_PORT, AddContext(c, handler)))
+	//log.Fatal(http.ListenAndServe(CONN_HOST+":"+CONN_PORT, nil))
 }
 
-func (w *intercept404) Write(b []byte) (int, error) {
-	if w.statusCode == http.StatusNotFound {
-		return len(b), nil
-	}
-	if w.statusCode != 0 {
-		w.WriteHeader(w.statusCode)
-	}
-	return w.ResponseWriter.Write(b)
-}
-
-func (w *intercept404) WriteHeader(statusCode int) {
-	if statusCode >= 300 && statusCode < 400 {
-		w.ResponseWriter.WriteHeader(statusCode)
-		return
-	}
-	w.statusCode = statusCode
-}
-
-func spaFileServeFunc(dir string) func(http.ResponseWriter, *http.Request) {
+func SpaFileServeFunc(dir string) func(http.ResponseWriter, *http.Request) {
 	fileServer := http.FileServer(http.Dir(dir))
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		wt := &intercept404{ResponseWriter: w}
 		fileServer.ServeHTTP(wt, r)
 		fmt.Println(w.Header())
@@ -77,119 +119,10 @@ func spaFileServeFunc(dir string) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-//end of spa handler code
-func main() {
-
-	mux := http.NewServeMux() //used for cors
-
-	//uses the autho handler and wraps the public one
-	//https://subscription.packtpub.com/book/web_development/9781787286740/1/ch01lvl1sec13/implementing-basic-authentication-on-a-simple-http-server
-	http.HandleFunc("/new", BasicAuth(d, "Please enter your username and password"))
-	mux.HandleFunc("/post", DB.POST)
-	mux.HandleFunc("/api", API.GET)
-	//uses the autho handler and wraps the public one
-	mux.HandleFunc("/", spaFileServeFunc("public"))
-	handler := cors.Default().Handler(mux)
-	c := context.Background()
-	log.Fatal(http.ListenAndServe(CONN_HOST+":"+CONN_PORT, AddContext(c, handler)))
-	//log.Fatal(http.ListenAndServe(CONN_HOST+":"+CONN_PORT, nil))
-}
-
-func BasicAuth(handler http.HandlerFunc, realm string) http.HandlerFunc {
-
-	fmt.Println("autho begin")
-	//checking
-
-	// This is a dummy check for credentials.
-	//go get html file
-	fmt.Println("db begin")
-	db, err := sql.Open("mysql", "root:@/user")
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("open ")
-	}
-
-	defer db.Close()
-	err = db.Ping()
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("ping ")
-	}
-	//opening database
-
-	var (
-		id       int
-		email    string
-		username string
-		password string
-	)
-	i := 0
-
-	//	rows, err := db.Query("select * from users where id = ?", 1)
-	rows, err := db.Query("select * from users")
-	for rows.Next() {
-		err := rows.Scan(&id, &username, &email, &password)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-
-			i++
-			fmt.Println("scan ", i)
-		}
-		//	fmt.Println("database ", username, password)
-		login = append(login, Login{Username: username, Email: email, Password: password})
-		//	fmt.Println("before marshal ", login)
-
-	}
-
-	defer rows.Close()
-	//	spew.Dump(login)
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("start comparing")
-		for key, value := range login {
-			fmt.Println(key, value.Email)
-			cookie, err := r.Cookie("mine")
-			if err != nil {
-				fmt.Printf("Cant find cookie :/\r\n")
-				return
-			}
-			if value.Email == cookie.Name {
-				fmt.Println("yes found")
-			}
-
-			fmt.Printf("%s=%s\r\n", cookie.Name, cookie.Value)
-			fmt.Println("done comparing")
-			// user, pass, ok := r.BasicAuth()
-			// //if not autho
-			// if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(ADMIN_USER)) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(ADMIN_PASSWORD)) != 1 {
-			// 	w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
-			// 	w.WriteHeader(401)
-			// 	w.Write([]byte("You are Unauthorized to access the application.\n"))
-			// 	return
-			// }
-			// var users = user
-			// for _, value := range login {
-
-			// 	fmt.Println(login)
-			// 	if user == string(login. {
-
-			// 	} else {
-			// 		unauthorised(w)
-			// 		return
-			// 	}
-			// }
-
-			handler(w, r)
-		}
-	}
-}
-
-func unauthorised(rw http.ResponseWriter) {
-	rw.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
-	rw.WriteHeader(http.StatusUnauthorized)
+//spa handler code
+type intercept404 struct {
+	http.ResponseWriter
+	statusCode int
 }
 
 var err error
@@ -225,11 +158,6 @@ func AddContext(ctx context.Context, next http.Handler) http.Handler {
 
 		Start := time.Now()
 		Duration := time.Now().Sub(Start)
-		cookie, _ := r.Cookie("mine")
-
-		for _, cookies := range r.Cookies() {
-			fmt.Fprint(w, Cyan(cookies.Name))
-		}
 
 		CC = Contexter{
 			M:      r.WithContext(ctx).Method,
@@ -261,28 +189,282 @@ func AddContext(ctx context.Context, next http.Handler) http.Handler {
 			Blue(CC.H.Get("Accept")),
 			Yellow(CC.I),
 		)
-		//this is to spit out the ctx.header in pieces cause its exhaustive
-		// for k, v := range CC.H {
-		// 	fmt.Println("\n", k, v)
-		// }
 
-		if cookie != nil {
-			//Add data to context
-			ctx := context.WithValue(r.Context(), "mine", cookie.Value)
-			next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r.WithContext(ctx))
 
-		} else {
-
-			if err != nil {
-				// Error occurred while parsing request body
-				w.WriteHeader(http.StatusBadRequest)
-
-				return
-			}
-			next.ServeHTTP(w, r.WithContext(ctx))
-		}
 	})
 }
-func d(res http.ResponseWriter, req *http.Request) {
-	io.WriteString(res, "dog dog dog")
+
+// index serves the index html file
+func index(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(w.Header())
+	fmt.Println("started")
+	fmt.Println("Post is chosen")
+	fmt.Println(r.Header.Get("Origin"))
+	allowedHeaders := "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization,X-CSRF-Token"
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080/home")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", allowedHeaders)
+	w.Header().Set("Access-Control-Expose-Headers", "Authorization")
+	fmt.Println("index started ")
+
+	session, _ := store.Get(r, "cookie-name")
+	fmt.Println(session)
+	user := getUser(session)
+	fmt.Println(user)
+
+	if r.Method == "GET" {
+
+		fmt.Println("this is the user: ", user)
+		tpl.ExecuteTemplate(w, "index.html", user)
+	}
+
+	if r.Method == "POST" {
+
+		fmt.Println("this is the user: ", user)
+		tpl.ExecuteTemplate(w, "index.html", user)
+	}
+
+}
+
+// logout revokes authentication for a user
+func logout(w http.ResponseWriter, r *http.Request) {
+	session, err := store.Get(r, "cookie-name")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	session.Values["user"] = User{}
+	session.Options.MaxAge = -1
+
+	err = session.Save(r, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+// secret displays the secret message for authorized users
+func secret(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Println(w.Header())
+	fmt.Println("started")
+	fmt.Println("Post is chosen")
+	fmt.Println(r.Header.Get("Origin"))
+	allowedHeaders := "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization,X-CSRF-Token"
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080/secret")
+	//w.Header().Set("Access-Control-Allow-Origin", "http://b6f2509b93bd.ngrok.io")
+
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", allowedHeaders)
+	w.Header().Set("Access-Control-Expose-Headers", "Authorization")
+
+	if r.Method == "GET" {
+		fmt.Println(r.Method)
+		fmt.Println("you reached the secret get")
+		session, _ := store.Get(r, "cookie-name")
+		fmt.Println(session)
+		user := getUser(session)
+		fmt.Println(user)
+		// Check if user is authenticated
+		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+			fmt.Println("unautho")
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		fmt.Println("about to send secret template")
+		tpl.ExecuteTemplate(w, "secret.html", nil)
+	}
+
+	if r.Method == "POST" {
+		fmt.Println(r.Method)
+		fmt.Println("you reached the secret post")
+		session, _ := store.Get(r, "cookie-name")
+		fmt.Println(session)
+		user := getUser(session)
+		fmt.Println(user)
+		// Check if user is authenticated
+		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+			fmt.Println("unautho")
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		fmt.Println("about to send secret template")
+		tpl.ExecuteTemplate(w, "secret.html", nil)
+	}
+
+}
+
+func forbidden(w http.ResponseWriter, r *http.Request) {
+	session, err := store.Get(r, "cookie-name")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	flashMessages := session.Flashes()
+	err = session.Save(r, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	tpl.ExecuteTemplate(w, "forbidden.html", flashMessages)
+}
+
+// getUser returns a user from session s
+// on error returns an empty user
+func getUser(s *sessions.Session) User {
+	val := s.Values["user"]
+	var user = User{}
+
+	fmt.Println(BgRed("/ʕ◔ϖ◔ʔ/ Cookies````````````````````````````````````````````"))
+	fmt.Printf("Options:%v\n - Values:%v\n - Path:%s\n - ID:%v\n - Name:%d\n - IsNew:%v\n - Domain:%s\n - MaxAge:%d\n - User:%v/n",
+		Cyan(s.Options),
+		Brown(s.Values),
+		Red(s.Options.Path),
+		Blue(s.ID),
+		Yellow(s.Name),
+		BgRed(s.IsNew),
+		BgGreen(s.Options.Domain),
+		BgBrown(s.Options.MaxAge),
+		BgMagenta(user))
+
+	user, ok := val.(User)
+	if !ok {
+		fmt.Println("user not autho")
+		return User{Authenticated: false}
+	}
+	return user
+}
+
+func getDBUser(Username string, pass string) *User {
+
+	fmt.Println("autho begin")
+
+	fmt.Println("return request")
+
+	//begininig authoa
+	login := GetAllDB()
+	//begin scanning
+	for key, value := range login {
+		fmt.Println(key, " username is: ", value.Username, "password is: ", value.Password)
+		//comparing usernames
+		if value.Username != Username {
+			fmt.Println("user not found")
+		} else {
+			fmt.Println("user found! ", value.Username)
+
+			//check passwords
+			if pass != value.Password {
+				fmt.Println("password not found")
+			} else {
+				fmt.Println("password found! ", value.Password)
+
+				user := &User{
+					Username:      Username,
+					Authenticated: true,
+				}
+				fmt.Println("right before return ", user)
+				return user
+
+			}
+		}
+
+	}
+	user := &User{
+		Username:      Username,
+		Authenticated: false,
+	}
+	return user
+
+}
+func exampleMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Our middleware logic goes here...
+		next.ServeHTTP(w, r)
+	})
+}
+
+// login authenticates the user
+func logins(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("login started")
+	session, err := store.Get(r, "cookie-name")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	username := r.FormValue("username")
+	pass := r.FormValue("code")
+	user := getDBUser(username, pass)
+	fmt.Println(user, username, pass)
+
+	session.Values["user"] = user
+
+	err = session.Save(r, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		fmt.Println("didnt make it to redirect")
+		return
+	}
+	fmt.Println("you are authoed and now being redirected to secret", user)
+
+	session.Values["authenticated"] = true
+	session.Save(r, w)
+	fmt.Println("Your request method:", r.Method)
+	err = tpl.ExecuteTemplate(w, "secret.html", nil)
+	if err != nil {
+		log.Fatalln("template didn't execute: ", err)
+	}
+
+	if r.FormValue("code") == "" {
+		session.AddFlash("Must enter a code")
+	}
+
+	return
+
+}
+
+func GetAllDB() []Login {
+	fmt.Println("db begin")
+	db, err := sql.Open("mysql", "root:@/user")
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("open ")
+	}
+
+	defer db.Close()
+	err = db.Ping()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("ping ")
+	}
+	//opening database
+
+	var (
+		id       int
+		email    string
+		username string
+		password string
+	)
+	i := 0
+
+	//	rows, err := db.Query("select * from users where id = ?", 1)
+	rows, err := db.Query("select * from users")
+	for rows.Next() {
+		err := rows.Scan(&id, &username, &email, &password)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			i++
+			fmt.Println("scan ", i)
+		}
+		login = append(login, Login{Username: username, Email: email, Password: password})
+
+	}
+	defer rows.Close()
+	return login
 }

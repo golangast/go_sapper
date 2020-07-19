@@ -41,3 +41,6 @@ https://docs.google.com/document/d/1ohWcUDKncIHfPK-E_Db72dt5PQtUZaa9UgSPaNdyoPU/
 #how i setup the post
 
 https://docs.google.com/document/d/1W-3u7ZTwr3r0ZuUlVUCOAidvWMAzJumH1YkvwcAK7Yk/edit
+
+
+sudo /opt/lampp/manager-linux-x64.run

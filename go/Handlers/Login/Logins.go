@@ -9,10 +9,12 @@ import (
 	//imported files
 	Autho "github.com/golangast/go_sapper/go/Autho"
 )
+
 //template stuff
 func init() {
 	tpl = template.Must(template.ParseGlob("templates/*.html"))
 }
+
 var tpl *template.Template
 
 // login handler authenticates the user
@@ -32,12 +34,11 @@ func Logins(w http.ResponseWriter, r *http.Request) {
 	if pass == "" {
 		session.AddFlash("Must enter a code")
 	}
-	return
-}
 
 	//authorize
 	user := Autho.GetAuthoUser(username, pass)
-    //create session
+
+	//create session
 	session.Values["user"] = user
 	session.Values["authenticated"] = true
 	err = session.Save(r, w)
@@ -52,4 +53,4 @@ func Logins(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln("template didn't execute: ", err)
 	}
 
-
+}

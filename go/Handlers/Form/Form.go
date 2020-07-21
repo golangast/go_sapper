@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	_ "github.com/go-sql-driver/mysql"
+	Header "github.com/golangast/go_sapper/go/Handlers/Headers"
 )
 
 func UnmarshalLogin(data []byte) (Login, error) {
@@ -66,18 +67,8 @@ func Save(l Data) (Data, error) {
 
 func POST(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Println(w.Header())
-	fmt.Println("started")
-	fmt.Println("Post is chosen")
-	fmt.Println(r.Header.Get("Origin"))
-	allowedHeaders := "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization,X-CSRF-Token"
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081/post")
-	w.Header().Set("Access-Control-Allow-Origin", "http://b6f2509b93bd.ngrok.io")
-
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers", allowedHeaders)
-	w.Header().Set("Access-Control-Expose-Headers", "Authorization")
-	w.WriteHeader(http.StatusOK)
+	//checking and authorizing headers
+	Header.Headers(w, r)
 
 	switch r.Method {
 	case "GET":

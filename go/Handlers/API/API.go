@@ -1,7 +1,6 @@
 package API
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,8 +8,13 @@ import (
 	"net/http"
 
 	_ "github.com/go-sql-driver/mysql"
+
+	//import
+	GetAllUsers "github.com/golangast/go_sapper/go/DB"
+	Header "github.com/golangast/go_sapper/go/Handlers/Headers"
 )
 
+//used to unmarshal data
 func UnmarshalLogin(data []byte) (Login, error) {
 	var r Login
 	fmt.Print("starting unmarshal")
@@ -20,29 +24,17 @@ func UnmarshalLogin(data []byte) (Login, error) {
 	return r, err
 }
 
+//needed to add method on package type
+type Login GetAllUsers.Login
+
 func (r *Login) Marshal() ([]byte, error) {
 	return json.Marshal(r)
 }
 
-type Login struct {
-	Username string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"pass"`
-}
-
 func GET(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Println(w.Header())
-	fmt.Println("started")
-	fmt.Println("Post is chosen")
-	fmt.Println(r.Header.Get("Origin"))
-	allowedHeaders := "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization,X-CSRF-Token"
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5000")
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081/get")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers", allowedHeaders)
-	w.Header().Set("Access-Control-Expose-Headers", "Authorization")
-	w.WriteHeader(http.StatusOK)
+	//checking and authorizing headers
+	Header.Headers(w, r)
 
 	//switch statement for get or post
 	switch r.Method {
@@ -52,54 +44,13 @@ func GET(w http.ResponseWriter, r *http.Request) {
 		for k, v := range r.URL.Query() {
 			fmt.Printf("%s: %s\n", k, v)
 		}
-		//w.Write([]byte("Received a GET request\n"))
 		fmt.Println("reqeusted boyd ", r.Body)
 
-		//go get html file
-		db, err := sql.Open("mysql", "root:@/user")
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println("open ")
-		}
+		//get all users
+		login := GetAllUsers.GetAllUsers()
 
-		defer db.Close()
-		err = db.Ping()
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println("ping ")
-		}
-		//opening database
-
-		var (
-			id       int
-			email    string
-			username string
-			password string
-		)
-		i := 0
-		var login []Login
-
-		//	rows, err := db.Query("select * from users where id = ?", 1)
-		rows, err := db.Query("select * from users")
-		for rows.Next() {
-			err := rows.Scan(&id, &username, &email, &password)
-			if err != nil {
-				fmt.Println(err)
-			} else {
-
-				i++
-				fmt.Println("scan ", i)
-			}
-
-			login = append(login, Login{Username: username, Email: email, Password: password})
-			fmt.Println("before marshal ", login)
-
-		}
-		json.NewEncoder(w).Encode(login) //remember to encode it
-
-		defer rows.Close()
+		//turn into json
+		json.NewEncoder(w).Encode(login)
 		w.Header().Set("Content-Type", "application/json")
 
 	case "POST":

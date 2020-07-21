@@ -7,9 +7,12 @@ import (
 	"github.com/golangast/go_sapper/go/Autho"
 )
 
+//used to let through the sveltejs
 func SpaFileServeFunc(dir string) func(http.ResponseWriter, *http.Request) {
+	//take from the sveltejs files
 	fileServer := http.FileServer(http.Dir(dir))
 	return func(w http.ResponseWriter, r *http.Request) {
+		//autho
 		session, _ := Autho.Store.Get(r, "cookie-name")
 		fmt.Println(session)
 		user := Autho.CheckUser(session)
@@ -19,14 +22,10 @@ func SpaFileServeFunc(dir string) func(http.ResponseWriter, *http.Request) {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-
+		//check if okay
 		wt := &intercept404{ResponseWriter: w}
 		fileServer.ServeHTTP(wt, r)
 		fmt.Println(w.Header())
-		fmt.Println("started")
-		fmt.Println("Post is chosen")
-		fmt.Println(r.Header.Get("Origin"))
-
 		if wt.statusCode == http.StatusNotFound {
 			r.URL.Path = "/"
 			w.Header().Set("Content-Type", "text/html")

@@ -46,11 +46,8 @@ func Logins(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("didnt make it to redirect")
 		return
 	}
-
-	//send them on their way
-	fmt.Println("you are authoed and now being redirected to secret", user)
 	fmt.Println("Your request method:", r.Method)
-	err = tpl.ExecuteTemplate(w, "secret.html", nil)
+	err = tpl.ExecuteTemplate(w, "success.html", nil)
 	if err != nil {
 		log.Fatalln("template didn't execute: ", err)
 	}

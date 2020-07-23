@@ -27,10 +27,10 @@ c := &http.Cookie{
     HttpOnly: true,
 }
 
-http.SetCookie(rw, c)
+http.SetCookie(w, c)
 	
 	fmt.Println("Your request method:", r.Method)
-	err = tpl.ExecuteTemplate(w, "logout.html", nil)
+  err := tpl.ExecuteTemplate(w, "logout.html", nil)
 	if err != nil {
 		log.Fatalln("template didn't execute: ", err)
 	}

@@ -17,17 +17,15 @@ import (
 	Logins "github.com/golangast/go_sapper/go/Handlers/Login"
 	Success "github.com/golangast/go_sapper/go/Handlers/Success"
 	Spa "github.com/golangast/go_sapper/go/Spa"
+  	Logout "github.com/golangast/go_sapper/go/Logout"
 )
 
-const (
-	CONN_HOST = "localhost"
-	CONN_PORT = "8080"
-)
 
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/post", DB.POST)
 	mux.HandleFunc("/api", API.GET)
+  mux.HandleFunc("/logout", Logout.Logout)
 	mux.HandleFunc("/login", Logins.Logins)
 	mux.HandleFunc("/home", Home.Home)
 	mux.HandleFunc("/forbidden", Forbidden.Forbidden)
@@ -37,6 +35,7 @@ func main() {
 	mux.HandleFunc("/", Spa.SpaFileServeFunc("public"))
 	handler := cors.Default().Handler(mux)
 	c := context.Background()
-	log.Fatal(http.ListenAndServe(CONN_HOST+":"+CONN_PORT, Contextor.AddContext(c, handler)))
+  log.Fatal(http.ListenAndServe(":8081", Contextor.AddContext(c, handler)))
+	//log.Fatal(http.ListenAndServe(CONN_HOST+":"+CONN_PORT, Contextor.AddContext(c, handler)))
 	//log.Fatal(http.ListenAndServe(CONN_HOST+":"+CONN_PORT, nil))
 }

@@ -17,7 +17,7 @@ import (
 	Logins "github.com/golangast/go_sapper/go/Handlers/Login"
 	Success "github.com/golangast/go_sapper/go/Handlers/Success"
 	Spa "github.com/golangast/go_sapper/go/Spa"
-  	Logout "github.com/golangast/go_sapper/go/Logout"
+  	Logout "github.com/golangast/go_sapper/go/Handlers/Logout"
 )
 
 

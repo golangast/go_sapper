@@ -1,4 +1,4 @@
-package autho
+package Autho
 
 import (
 	"encoding/gob"
@@ -86,15 +86,8 @@ func GetAuthoUser(Username string, pass string) *User {
 	login := GetAllUsers.GetAllUsers()
 	//begin scanning
 	for key, value := range login {
-		spew.Dump(value)
-
-		spew.Dump(key)
 		//comparing values
-		fmt.Printf("%T\n", value)
-
-		fmt.Printf("%+v\n", value)
-
-		success := CompareUser(value)
+		success := CompareUser(value.Username, value.Password, Username, pass)
 		if success == true {
 			return &user
 		} else {
@@ -109,24 +102,24 @@ func GetAuthoUser(Username string, pass string) *User {
 }
 
 //CompareUser compares the user data
-func CompareUser(l GetAllUsers.Login) bool {
-	spew.Dump(l)
+func CompareUser(u string, p string, Username string, pass string) bool {
 	//comparing usernames
-	// if l.Username != Username {
-	// 	fmt.Println("user not found")
-	// } else {
-	// 	fmt.Println("user found! ", l.Username)
-	// 	//check passwords
-	// 	if pass != l.Password {
-	// 		fmt.Println("password not found")
-	// 	} else {
-	// 		fmt.Println("password found! ", l.Password)
-	// 		user := &User{
-	// 			Username:      Username,
-	// 			Authenticated: true,
-	// 		}
-	// 		return true
-	// 	}
-	// }
+	if u != Username {
+		fmt.Println("user not found")
+	} else {
+		fmt.Println("user found! ", u)
+		//check passwords
+		if pass != p {
+			fmt.Println("password not found")
+		} else {
+			fmt.Println("password found! ", p)
+			user := &User{
+				Username:      u,
+				Authenticated: true,
+			}
+			spew.Dump(user)
+			return true
+		}
+	}
 	return true
 }

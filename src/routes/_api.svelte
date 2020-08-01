@@ -1,6 +1,6 @@
 <script>
 	import Apis, {actualapi, getResult} from "./_getapi.svelte";
-	let actualtt = getResult("http://localhost:8080/api");
+	let actualtt = getResult("http://localhost:8081/api");
 	let ff = [];
 	var promise = Promise.resolve(actualtt).then(function(val) { 
 			console.log(val); 

@@ -2,10 +2,10 @@
   "bundler": "rollup",
   "shimport": "1.0.1",
   "assets": {
-    "main": "client.91f96ea9.js"
+    "main": "client.e22c960e.js"
   },
   "css": {
-    "main": "main.3462251439.css",
+    "main": "main.37396591.css",
     "chunks": {
       "index.svelte": [],
       "bloggy/Whatidowithgo.svelte": [],
@@ -15,10 +15,12 @@
       "about.svelte": [],
       "blogs/index.svelte": [],
       "blogs/[slug].svelte": [],
+      "login.svelte": [],
       "blog/index.svelte": [],
       "blog/[slug].svelte": [],
       "form.svelte": [],
-      "show.svelte": []
+      "show.svelte": [],
+      "new.svelte": []
     }
   }
 }

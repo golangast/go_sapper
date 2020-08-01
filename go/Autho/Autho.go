@@ -1,44 +1,62 @@
-package Autho
+package autho
 
 import (
 	"encoding/gob"
 	"fmt"
 
+	//import
+
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	. "github.com/logrusorgru/aurora"
 
-	//import
 	GetAllUsers "github.com/golangast/go_sapper/go/DB"
 )
 
+type Login struct {
+	Username string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"pass"`
+}
+
 //initialize for autho
 func init() {
+	//gernerate the random keys
 	authKeyOne := securecookie.GenerateRandomKey(64)
 	encryptionKeyOne := securecookie.GenerateRandomKey(32)
+
+	//start a session
 	Store = sessions.NewCookieStore(
 		authKeyOne,
 		encryptionKeyOne,
 	)
+
+	//store the session
 	Store.Options = &sessions.Options{
 		MaxAge:   60 * 15,
 		HttpOnly: true,
 	}
+
+	//check the user
 	gob.Register(User{})
 }
 
-// store will hold all session data
+// Store will hold all session data
 var Store *sessions.CookieStore
 
+//User wrapper for user data
 type User struct {
 	Username      string
 	Authenticated bool
 }
 
-// on error returns an empty user
+var user = User{}
+
+// CheckUser on error returns an empty user
 func CheckUser(s *sessions.Session) User {
+
 	val := s.Values["user"]
-	var user = User{}
 
 	//prints the cookie data
 	fmt.Println(BgRed("/ʕ◔ϖ◔ʔ/ Cookies````````````````````````````````````````````"))
@@ -62,38 +80,53 @@ func CheckUser(s *sessions.Session) User {
 	return user
 }
 
-//where the actual Autho begins
+//GetAuthoUser starts autho
 func GetAuthoUser(Username string, pass string) *User {
-	fmt.Println("autho begin")
-	fmt.Println("return request")
 	//begininig authoa
 	login := GetAllUsers.GetAllUsers()
 	//begin scanning
 	for key, value := range login {
-		fmt.Println(key, " username is: ", value.Username, "password is: ", value.Password)
-		//comparing usernames
-		if value.Username != Username {
-			fmt.Println("user not found")
+		spew.Dump(value)
+
+		spew.Dump(key)
+		//comparing values
+		fmt.Printf("%T\n", value)
+
+		fmt.Printf("%+v\n", value)
+
+		success := CompareUser(value)
+		if success == true {
+			return &user
 		} else {
-			fmt.Println("user found! ", value.Username)
-			//check passwords
-			if pass != value.Password {
-				fmt.Println("password not found")
-			} else {
-				fmt.Println("password found! ", value.Password)
-				user := &User{
-					Username:      Username,
-					Authenticated: true,
-				}
-				fmt.Println("right before return ", user)
-				return user
+			user := &User{
+				Username:      Username,
+				Authenticated: false,
 			}
+			spew.Dump(user)
 		}
 	}
-	user := &User{
-		Username:      Username,
-		Authenticated: false,
-	}
-	return user
+	return &user
+}
 
+//CompareUser compares the user data
+func CompareUser(l GetAllUsers.Login) bool {
+	spew.Dump(l)
+	//comparing usernames
+	// if l.Username != Username {
+	// 	fmt.Println("user not found")
+	// } else {
+	// 	fmt.Println("user found! ", l.Username)
+	// 	//check passwords
+	// 	if pass != l.Password {
+	// 		fmt.Println("password not found")
+	// 	} else {
+	// 		fmt.Println("password found! ", l.Password)
+	// 		user := &User{
+	// 			Username:      Username,
+	// 			Authenticated: true,
+	// 		}
+	// 		return true
+	// 	}
+	// }
+	return true
 }

@@ -50,7 +50,11 @@ export default {
 					'@babel/plugin-syntax-dynamic-import',
 					['@babel/plugin-transform-runtime', {
 						useESModules: true
-					}]
+					}],
+					svelte({
+						   preprocess: autoPreprocess()
+							}),
+							typescript({ sourceMap: !production })
 				]
 			}),
 

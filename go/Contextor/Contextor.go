@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -45,6 +46,7 @@ func AddContext(ctx context.Context, next http.Handler) http.Handler {
 
 		Start := time.Now()
 		Duration := time.Now().Sub(Start)
+		log.Printf("<< %s %s %v", r.Method, r.URL.Path, time.Since(Start))
 
 		CC = Contexter{
 			M:      r.WithContext(ctx).Method,

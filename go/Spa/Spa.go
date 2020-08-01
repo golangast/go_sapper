@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/golangast/go_sapper/go/Autho"
+	"github.com/golangast/go_sapper/go/autho"
 )
 
 //used to let through the sveltejs

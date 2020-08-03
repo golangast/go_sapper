@@ -16,6 +16,7 @@ import (
 	Home "github.com/golangast/go_sapper/go/Handlers/Home"
 	Logins "github.com/golangast/go_sapper/go/Handlers/Login"
 	Logout "github.com/golangast/go_sapper/go/Handlers/Logout"
+	Signup "github.com/golangast/go_sapper/go/Handlers/Signup"
 	Success "github.com/golangast/go_sapper/go/Handlers/Success"
 	Spa "github.com/golangast/go_sapper/go/Spa"
 )
@@ -36,6 +37,7 @@ func main() {
 	//err := server.ListenAndServeTLS("", "") if err != nil {         log.Fatal("ListenAndServe: ", err) }
 	mux := http.NewServeMux()
 	mux.HandleFunc("/post", DB.POST)
+	mux.HandleFunc("/signup", Signup.Signup)
 	mux.HandleFunc("/api", API.GET)
 	mux.HandleFunc("/logout", Logout.Logout)
 	mux.HandleFunc("/login", Logins.Logins)

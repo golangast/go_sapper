@@ -6,9 +6,9 @@ import (
 )
 
 type Login struct {
-	Username string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"pass"`
+	Email string `json:"email"`
+	Name  string `json:"name"`
+	Pass  string `json:"pass"`
 }
 
 func GetAllUsers() []Login {
@@ -30,24 +30,24 @@ func GetAllUsers() []Login {
 	}
 
 	var (
-		id       int
-		email    string
-		username string
-		password string
-		login    []Login
+		id    int
+		email string
+		name  string
+		pass  string
+		login []Login
 	)
 	i := 0
 
 	rows, err := db.Query("select * from users")
 	for rows.Next() {
-		err := rows.Scan(&id, &username, &email, &password)
+		err := rows.Scan(&id, &email, &name, &pass)
 		if err != nil {
 			fmt.Println(err)
 		} else {
 			i++
 			fmt.Println("scan ", i)
 		}
-		login = append(login, Login{Username: username, Email: email, Password: password})
+		login = append(login, Login{Email: email, Name: name, Pass: pass})
 
 	}
 	defer rows.Close()

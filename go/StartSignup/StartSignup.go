@@ -31,13 +31,14 @@ func Logins(w http.ResponseWriter, r *http.Request) {
 	//grab the form data
 	username := r.FormValue("username")
 	pass := r.FormValue("password")
+	email := r.FormValue("email")
 
 	if pass == "" {
 		session.AddFlash("Must enter a password")
 	}
 
 	//GetAuthoUser checks username/pass if correct returns authorized user
-	user := Autho.GetAuthoUser(username, pass)
+	user := Autho.SignupUser(username, pass, email)
 
 	//create session
 	session.Values["user"] = user

@@ -44,3 +44,5 @@ https://docs.google.com/document/d/1W-3u7ZTwr3r0ZuUlVUCOAidvWMAzJumH1YkvwcAK7Yk/
 
 
 sudo /opt/lampp/manager-linux-x64.run
+
+sudo kill -9 $(sudo lsof -t -i:8081)

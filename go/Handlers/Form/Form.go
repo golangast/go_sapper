@@ -100,8 +100,7 @@ func POST(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("opening database")
 
 		//database beginsssssss
-
-		db, err := sql.Open("mysql", "admin:@/user")
+		db, err := sql.Open("mysql", "root:@/user")
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -124,13 +123,6 @@ func POST(w http.ResponseWriter, r *http.Request) {
 
 		userstemp := Data{L: Login{Name: l.Name, Email: l.Email, Pass: l.Pass}}
 		fmt.Println(userstemp)
-		//cookies
-		c := http.Cookie{
-			Name:   "mine",
-			Value:  userstemp.L.Name,
-			Domain: "http://localhost:8080/",
-		}
-		http.SetCookie(w, &c)
 
 		u := userstemp
 		s, err := Save(u)

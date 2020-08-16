@@ -75,14 +75,15 @@ func CheckUser(s *sessions.Session) User {
 	//checking user autho
 	user, ok := val.(User)
 	if !ok {
-		fmt.Println("user not autho")
+		fmt.Println(user, " user not autho")
 		return User{Authenticated: false}
 	}
+
 	return user
 }
 
 //GetAuthoUser starts autho
-func GetAuthoUser(Username string, pass string) *User {
+func GetAuthoUser(Username string, pass string) User {
 	//begininig authoa
 	login := GetAllUsers.GetAllUsers()
 	//begin scanning
@@ -90,20 +91,31 @@ func GetAuthoUser(Username string, pass string) *User {
 		//comparing values
 		success := CompareUser(value.Email, value.Name, Username, pass)
 		if success == true {
-			return &user
+			user := User{
+				Username:      Username,
+				Authenticated: true,
+			}
+			session.Values["user"] = User{}
+			session.Options.MaxAge = -1
+			err = session.Save(r, w)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			return user
 		} else {
-			user := &User{
+			user := User{
 				Username:      Username,
 				Authenticated: false,
 			}
 			spew.Dump(user)
 		}
 	}
-	return &user
+	return user
 }
 
 //SignupUser starts autho
-func SignupUser(email string, Username string, pass string) *User {
+func SignupUser(email string, Username string, pass string) User {
 	//begininig authoa
 	login := GetAllUsers.GetAllUsers()
 	//begin scanning
@@ -111,9 +123,20 @@ func SignupUser(email string, Username string, pass string) *User {
 		//comparing values
 		success := CompareSignupUser(value.Email, value.Name, value.Pass, Username, pass, email)
 		if success == true {
-			return &user
+			user := User{
+				Username:      Username,
+				Authenticated: true,
+			}
+			session.Values["user"] = User{}
+			session.Options.MaxAge = -1
+			err = session.Save(r, w)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			return user
 		} else {
-			user := &User{
+			user := User{
 				Email:         email,
 				Username:      Username,
 				Authenticated: false,
@@ -121,7 +144,7 @@ func SignupUser(email string, Username string, pass string) *User {
 			spew.Dump(user)
 		}
 	}
-	return &user
+	return user
 }
 
 //CompareUser compares the user data
@@ -129,11 +152,13 @@ func CompareUser(u string, p string, Username string, pass string) bool {
 	//comparing usernames
 	if u != Username {
 		fmt.Println("user not found")
+		return false
 	} else {
 		fmt.Println("user found! ", u)
 		//check passwords
 		if pass != p {
 			fmt.Println("password not found")
+			return false
 		} else {
 			fmt.Println("password found! ", p)
 			user := &User{
@@ -153,11 +178,13 @@ func CompareSignupUser(u string, p string, e string, Username string, pass strin
 	//comparing usernames
 	if e != email {
 		fmt.Println("email not found")
+		return false
 	} else {
 		fmt.Println("email is found")
 	}
 	if u != Username {
 		fmt.Println("user not found")
+		return false
 	} else {
 		fmt.Println("user found! ", u)
 		//check passwords

@@ -95,13 +95,7 @@ func GetAuthoUser(Username string, pass string) User {
 				Username:      Username,
 				Authenticated: true,
 			}
-			session.Values["user"] = User{}
-			session.Options.MaxAge = -1
-			err = session.Save(r, w)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+
 			return user
 		} else {
 			user := User{
@@ -127,13 +121,7 @@ func SignupUser(email string, Username string, pass string) User {
 				Username:      Username,
 				Authenticated: true,
 			}
-			session.Values["user"] = User{}
-			session.Options.MaxAge = -1
-			err = session.Save(r, w)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+
 			return user
 		} else {
 			user := User{

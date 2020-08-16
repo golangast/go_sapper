@@ -29,13 +29,7 @@ func Success(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		fmt.Println(r.Method)
-
-		session, err := Autho.Store.Get(r, "cookie-name")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
+		session, _ := Autho.Store.Get(r, "cookie-name")
 		user := Autho.CheckUser(session)
 		fmt.Println(user)
 		// Check if user is authenticated
@@ -43,14 +37,6 @@ func Success(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("unautho")
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
-		}
-
-		if user.Authenticated == true {
-			err = session.Save(r, w)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
 		}
 		tpl.ExecuteTemplate(w, "secret.html", nil)
 	}

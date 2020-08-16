@@ -12,14 +12,30 @@ func SpaFileServeFunc(dir string) func(http.ResponseWriter, *http.Request) {
 	//take from the sveltejs files
 	fileServer := http.FileServer(http.Dir(dir))
 	return func(w http.ResponseWriter, r *http.Request) {
+		var err error
 		//autho
 		session, _ := Autho.Store.Get(r, "cookie-name")
 		fmt.Println(session)
 		user := Autho.CheckUser(session)
 		fmt.Println(user)
-		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
-			fmt.Println("unautho")
-			http.Error(w, "Forbidden", http.StatusForbidden)
+		// if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+		// 	fmt.Println("unautho")
+		// 	http.Error(w, "Forbidden", http.StatusForbidden)
+		// 	return
+		// }
+
+		session.Values["user"] = user
+		if user.Authenticated == true {
+			fmt.Println("authorized sessions started")
+			session.Values["authenticated"] = true
+		} else {
+			session.Values["authenticated"] = false
+		}
+
+		err = session.Save(r, w)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			fmt.Println("didnt make it to redirect")
 			return
 		}
 		//check if okay

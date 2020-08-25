@@ -1,4 +1,21 @@
 {
     "files.autoSave": "afterDelay",
-    "workbench.colorTheme": "Community Material Theme Darker"
+    "workbench.colorTheme": "Panda Syntax",
+    "editor.fontFamily": "'GoMono'",
+    "go.editorContextMenuCommands": {
+    
+        "toggleTestFile": true,
+        "addTags": true,
+        "removeTags": false,
+        "testAtCursor": true,
+        "testFile": false,
+        "testPackage": false,
+        "generateTestForFunction": true,
+        "generateTestForFile": false,
+        "generateTestForPackage": false,
+        "addImport": true,
+        "testCoverage": true,
+        "playground": true,
+        "debugTestAtCursor": true
+    }
 }

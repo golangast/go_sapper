@@ -1,0 +1,1 @@
+import{S as s,a,s as t,t as e,f as l,k as n,y as r,g as o}from"./client.6e253bf6.js";function i(s){let a,t;return{c(){a=e("learning "),t=e(c)},l(s){a=l(s,"learning "),t=l(s,c)},m(s,e){n(s,a,e),n(s,t,e)},p:r,i:r,o:r,d(s){s&&o(a),s&&o(t)}}}let c="world";export default class extends s{constructor(s){super(),a(this,s,null,i,t,{})}}
